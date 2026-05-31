@@ -1096,13 +1096,24 @@ function renderSchema(){
     var active=S.selectedPerson===sk.id;
     var isHelm=sk.role==='helmsman';
     var ini=(sk.name||'').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+
+    /* count unconfirmed assigned bookings for this person */
+    var unconfirmed=S.bookings.filter(function(b){
+      return (b.skippers||[]).includes(sk.name) &&
+             !(b.crewConfirmed&&b.crewConfirmed[sk.name]);
+    }).length;
+
     var btn=h('button',{
-      style:'display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:50px;border:1.5px solid '+(active?navy:'#d4c9b4')+';background:'+(active?navy:white)+';cursor:pointer;font-family:Outfit,sans-serif;font-size:.85rem;font-weight:'+(active?'500':'400')+';color:'+(active?white:stone),
+      style:'display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:50px;border:1.5px solid '+(active?navy:'#d4c9b4')+';background:'+(active?navy:white)+';cursor:pointer;font-family:Outfit,sans-serif;font-size:.85rem;font-weight:'+(active?'500':'400')+';color:'+(active?white:stone)+';position:relative',
       onclick:function(){S.selectedPerson=sk.id;render();}
     });
     btn.appendChild(h('div',{style:'width:26px;height:26px;border-radius:50%;background:'+(active?'rgba(255,255,255,.15)':(isHelm?'#fef3c7':'#e2edf2'))+';display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;color:'+(active?white:(isHelm?'#92400e':water))},[ini]));
     btn.appendChild(h('span',{},[sk.name]));
     if(!active) btn.appendChild(h('span',{style:'font-size:.68rem;padding:1px 7px;border-radius:50px;background:'+(isHelm?'#fef3c7':'#e2edf2')+';color:'+(isHelm?'#92400e':water)},[isHelm?'Rorsman':'Skeppare']));
+    /* notification bubble */
+    if(unconfirmed>0){
+      btn.appendChild(h('span',{style:'display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:50px;background:#c0392b;color:white;font-size:.68rem;font-weight:700;padding:0 4px;line-height:1'},[String(unconfirmed)]));
+    }
     pickerWrap.appendChild(btn);
   });
   wrap.appendChild(pickerWrap);
