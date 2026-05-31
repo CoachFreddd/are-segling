@@ -289,7 +289,6 @@ function renderSite(){
   nav.appendChild(h('div',{style:'font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:400;color:'+glacier+';letter-spacing:.04em'},['Åresjön Segling']));
   var navR=h('div',{style:'display:flex;gap:1.5rem;align-items:center'});
   navR.appendChild(h('a',{href:'#produkter',style:'color:rgba(255,255,255,.65);font-size:.82rem;text-decoration:none;letter-spacing:.06em;text-transform:uppercase'},['Boka']));
-  navR.appendChild(h('a',{href:'#instagram',style:'color:rgba(255,255,255,.65);font-size:.82rem;text-decoration:none;letter-spacing:.06em;text-transform:uppercase'},['Instagram']));
   navR.appendChild(h('button',{style:CS.btnSm,onclick:function(){S.loginUser='';S.loginPass='';S.loginErr=false;S.view='login';render();}},['Admin →']));
   nav.appendChild(navR);wrap.appendChild(nav);
 
@@ -310,17 +309,18 @@ function renderSite(){
   hc.appendChild(h('p',{style:'color:rgba(255,255,255,.6);font-weight:300;line-height:1.75;max-width:440px;margin-bottom:2.5rem;font-size:1rem'},['En unik seglingsupplevelse på en av Sveriges vackraste sjöar — omgiven av Åres majestätiska fjäll.']));
   hc.appendChild(h('a',{href:'#produkter',style:CS.btnPrimary+';text-decoration:none;display:inline-block'},['Se aktiviteter']));
 
-  /* ── weather widget ── */
-  var weatherBox=h('div',{id:'weather-box',style:'position:absolute;top:1.25rem;right:1.75rem;z-index:3;background:rgba(255,255,255,.10);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:.75rem 1.1rem;min-width:170px;color:white'});
-  weatherBox.innerHTML='<div style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(200,216,224,.65);margin-bottom:6px">Åresjön just nu</div><div style="font-size:.8rem;opacity:.5">Hämtar väder...</div>';
-  hero.appendChild(weatherBox);
-  fetchWeather();
-
   hero.appendChild(hc);wrap.appendChild(hero);
 
   /* products */
   var ps=h('section',{id:'produkter',style:'padding:5rem 2.5rem;max-width:1200px;margin:0 auto'});
-  ps.appendChild(h('div',{style:'font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:'+water+';margin-bottom:.75rem'},'Aktiviteter'));
+  /* top row: kicker + weather side by side */
+  var psTop=h('div',{style:'display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.75rem;flex-wrap:wrap'});
+  psTop.appendChild(h('div',{style:'font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:'+water+';padding-top:4px'},'Aktiviteter'));
+  var weatherBox=h('div',{id:'weather-box',style:'background:rgba(30,48,64,.06);backdrop-filter:blur(8px);border:1px solid rgba(74,127,160,.2);border-radius:12px;padding:.6rem 1rem;min-width:190px;color:'+stone+';font-size:.75rem'});
+  weatherBox.innerHTML='<div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:'+water+';margin-bottom:4px">Åresjön just nu</div><div style="opacity:.4">Hämtar väder...</div>';
+  psTop.appendChild(weatherBox);
+  ps.appendChild(psTop);
+  fetchWeather();
   ps.appendChild(h('h2',{style:'font-family:"Cormorant Garamond",serif;font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:300;color:'+stone+';margin-bottom:.75rem'},['Välj din upplevelse']));
   ps.appendChild(h('p',{style:'color:'+muted+';font-size:.95rem;line-height:1.75;font-weight:300;margin-bottom:3rem'},['Från korta äventyr till kurser — allt på Åresjöns klara vatten med fjällen runtomkring.']));
   var pgrid=h('div',{id:'prod-grid',style:'display:grid;grid-template-columns:repeat(2,1fr);gap:1.75rem'});
@@ -344,16 +344,6 @@ function renderSite(){
   });
   ps.appendChild(pgrid);wrap.appendChild(ps);
 
-  /* instagram */
-  var ig=h('section',{id:'instagram',style:'padding:5rem 2.5rem;background:'+white});
-  var igI=h('div',{style:'max-width:1200px;margin:0 auto'});
-  igI.appendChild(h('div',{style:'font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:'+water+';margin-bottom:.75rem'},'Instagram'));
-  igI.appendChild(h('h2',{style:'font-family:"Cormorant Garamond",serif;font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:300;color:'+stone+';margin-bottom:.75rem'},['Följ vårt äventyr']));
-  igI.appendChild(h('p',{style:'color:'+muted+';font-size:.95rem;line-height:1.75;font-weight:300;margin-bottom:2rem'},['Se de senaste bilderna från livet på Åresjön. Följ oss på Instagram @aresjosegling']));
-  var igE=h('div',{style:'background:#f9f7f4;border-radius:16px;padding:2rem;text-align:center'});
-  igE.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:2rem"><div style="font-size:3rem">📸</div><div style="font-weight:500;color:'+stone+'">Instagram-flöde</div><div style="color:'+muted+';font-size:.9rem;max-width:420px;line-height:1.6">Klistra in din LightWidget- eller Elfsight-kod i källkoden (sök efter INSTAGRAM_EMBED_PLACEHOLDER).</div><a href="https://lightwidget.com" target="_blank" style="color:'+water+';font-size:.85rem;text-decoration:none;border:1px solid '+water+';padding:8px 18px;border-radius:50px">Skapa widget på LightWidget →</a></div>';
-  /* INSTAGRAM_EMBED_PLACEHOLDER */
-  igI.appendChild(igE);ig.appendChild(igI);wrap.appendChild(ig);
 
   /* footer */
   wrap.appendChild(h('footer',{id:'om',style:'background:'+navy+';color:rgba(255,255,255,.4);padding:3.5rem 2.5rem;text-align:center'},
@@ -768,39 +758,62 @@ function renderAdminProducts(){
   S.products.forEach(function(p){
     var card=h('div',{style:CS.card});
 
-    /* ── image preview ── */
+    /* ── image upload ── */
     var currentSrc=p.img||(p.imgFile?'images/'+p.imgFile:'');
-    var imgBox=h('div',{style:'height:130px;background:#e2edf2;border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center'});
+    var imgBox=h('div',{style:'height:140px;background:#e2edf2;border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center',
+      onclick:function(){fileInp.click();}
+    });
     if(currentSrc){
       var previewImg=h('img',{src:currentSrc,style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'});
       previewImg.onerror=function(){this.style.display='none';};
       imgBox.appendChild(previewImg);
     }
-    imgBox.appendChild(h('div',{style:'position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:'+water+';opacity:'+(currentSrc?0:.5)+';font-size:.72rem;text-transform:uppercase;letter-spacing:.06em'},['⛵ Ingen bild']));
-    card.appendChild(imgBox);
-
-    /* ── filename input ── */
-    card.appendChild(h('label',{style:CS.label},['Bildfilnamn (från images/-mappen)']));
-    var imgRow=h('div',{style:'display:flex;gap:6px;margin-bottom:12px;align-items:center'});
-    var imgIn=h('input',{style:CS.input,type:'text',placeholder:'t.ex. halvdag.jpg',value:p.imgFile||''});
-    imgIn.oninput=function(){
-      p.imgFile=this.value.trim();
-      p.img=null; /* clear base64 when using file path */
-      /* update preview live */
-      var pr=imgBox.querySelector('img');
-      if(p.imgFile){
-        if(!pr){pr=h('img',{style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'});pr.onerror=function(){this.style.display='none';};imgBox.insertBefore(pr,imgBox.firstChild);}
-        pr.src='images/'+p.imgFile;pr.style.display='';
-      } else if(pr){pr.style.display='none';}
+    /* hover overlay */
+    var imgOverlay=h('div',{style:'position:absolute;inset:0;background:rgba(30,48,64,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;opacity:0;transition:opacity .2s'});
+    imgOverlay.appendChild(h('div',{style:'font-size:1.5rem'},['📷']));
+    imgOverlay.appendChild(h('div',{style:'font-size:.7rem;color:white;letter-spacing:.06em;text-transform:uppercase'},[currentSrc?'Byt bild':'Ladda upp bild']));
+    imgBox.appendChild(imgOverlay);
+    imgBox.onmouseover=function(){imgOverlay.style.opacity='1';};
+    imgBox.onmouseout=function(){imgOverlay.style.opacity='0';};
+    /* placeholder when no image */
+    if(!currentSrc){
+      var ph2=h('div',{style:'position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;color:'+water+';opacity:.45'});
+      ph2.appendChild(h('div',{style:'font-size:2rem'},['⛵']));
+      ph2.appendChild(h('div',{style:'font-size:.7rem;letter-spacing:.06em;text-transform:uppercase'},['Klicka för att ladda upp bild']));
+      imgBox.appendChild(ph2);
+    }
+    /* hidden file input */
+    var fileInp=h('input',{type:'file',accept:'image/*',style:'display:none'});
+    fileInp.onchange=function(){
+      var file=this.files[0]; if(!file) return;
+      /* compress: draw to canvas max 1200px wide */
+      var reader=new FileReader();
+      reader.onload=function(ev){
+        var img2=new Image();
+        img2.onload=function(){
+          var MAX=1200;
+          var w=img2.width, wh=img2.height;
+          if(w>MAX){wh=Math.round(wh*MAX/w);w=MAX;}
+          var canvas=document.createElement('canvas');
+          canvas.width=w; canvas.height=wh;
+          canvas.getContext('2d').drawImage(img2,0,0,w,wh);
+          p.img=canvas.toDataURL('image/jpeg',0.82);
+          p.imgFile=null;
+          save(); render(); toast('Bild uppladdad ✓');
+        };
+        img2.src=ev.target.result;
+      };
+      reader.readAsDataURL(file);
     };
-    imgRow.appendChild(imgIn);
-    imgRow.appendChild(h('button',{style:CS.btnSm,onclick:function(){
-      p.imgFile=imgIn.value.trim();
-      p.img=null;
-      save();toast('Bildsökväg sparad');render();
-    }},['Spara']));
-    card.appendChild(imgRow);
-    card.appendChild(h('div',{style:'font-size:.72rem;color:'+muted+';margin-bottom:12px;line-height:1.5'},['Lägg bilden i en mapp som heter images/ bredvid HTML-filen på Netlify. Skriv sedan filnamnet ovan, t.ex. halvdag.jpg']));
+    imgBox.appendChild(fileInp);
+    card.appendChild(imgBox);
+    /* remove image link */
+    if(currentSrc){
+      var rmLink=h('button',{style:'border:none;background:none;color:'+muted+';font-size:.72rem;cursor:pointer;padding:0;margin-bottom:10px;text-decoration:underline',
+        onclick:function(){p.img=null;p.imgFile=null;save();render();toast('Bild borttagen');}
+      },['Ta bort bild']);
+      card.appendChild(rmLink);
+    }
     card.appendChild(h('label',{style:CS.label},['Namn']));
     var pname=h('input',{style:CS.input+';margin-bottom:8px;font-weight:500',type:'text',value:p.name});pname.oninput=function(){p.name=this.value;};card.appendChild(pname);
     var pgrid=h('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px'});
@@ -1163,22 +1176,22 @@ function fetchWeather(){
     var box=document.getElementById('weather-box');
     if(!box) return;
     box.innerHTML=
-      '<div style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(200,216,224,.65);margin-bottom:8px">Åresjön just nu</div>'
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
-      +'<span style="font-size:1.8rem;line-height:1">'+icon+'</span>'
+      '<div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#4a7fa0;margin-bottom:6px">Åresjön just nu</div>'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">'
+      +'<span style="font-size:1.5rem;line-height:1">'+icon+'</span>'
       +'<div>'
-      +'<div style="font-size:1.5rem;font-weight:600;line-height:1;font-family:inherit">'+temp+'°C</div>'
-      +'<div style="font-size:.72rem;color:rgba(255,255,255,.6);margin-top:1px">Känns som '+feels+'°</div>'
+      +'<div style="font-size:1.2rem;font-weight:600;line-height:1;color:#1e3040">'+temp+'°C</div>'
+      +'<div style="font-size:.68rem;color:#7a7a76;margin-top:1px">Känns som '+feels+'°</div>'
       +'</div></div>'
-      +'<div style="border-top:1px solid rgba(255,255,255,.12);padding-top:7px;display:flex;align-items:center;gap:6px">'
-      +'<span style="font-size:1rem">💨</span>'
+      +'<div style="border-top:1px solid rgba(74,127,160,.15);padding-top:5px;display:flex;align-items:center;gap:6px">'
+      +'<span style="font-size:.85rem">💨</span>'
       +'<div>'
-      +'<div style="font-size:.82rem;font-weight:500">'+wind+' m/s '+windDir+'</div>'
-      +'<div style="font-size:.68rem;color:rgba(255,255,255,.55)">Bft '+bft+' · '+desc+'</div>'
+      +'<div style="font-size:.78rem;font-weight:500;color:#1e3040">'+wind+' m/s '+windDir+'</div>'
+      +'<div style="font-size:.65rem;color:#7a7a76">Bft '+bft+' · '+desc+'</div>'
       +'</div></div>';
   }).catch(function(){
     var box=document.getElementById('weather-box');
-    if(box) box.innerHTML='<div style="font-size:.65rem;color:rgba(200,216,224,.55)">Åresjön just nu</div><div style="font-size:.75rem;opacity:.4;margin-top:4px">Väder ej tillgängligt</div>';
+    if(box) box.innerHTML='<div style="font-size:.6rem;color:#4a7fa0">Åresjön just nu</div><div style="font-size:.72rem;color:#7a7a76;margin-top:3px">Väder ej tillgängligt</div>';
   });
 }
 
