@@ -1173,45 +1173,74 @@ function renderSchema(){
       var colleagues=(bk.skippers||[]).filter(function(n){return n!==person.name;});
       var typeColor={'halvdag':water,'heldag':'#27ae60','kurs':'#8b5cf6','privat':'#f59e0b'}[bk.type]||'#888';
       var typeLabel={'halvdag':'Halvdag','heldag':'Heldag','kurs':'Kurs','privat':'Privat'}[bk.type]||bk.title;
+      var prod=S.products.find(function(p){return p.id===bk.type;});
+      var imgSrc=prod?(prod.img||(prod.imgFile?'images/'+prod.imgFile:'')):null;
 
-      var card=h('div',{style:'background:'+white+';border:1px solid #e2edf2;border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;border-left:3px solid '+(bk.confirmed?'#27ae60':'#d4c9b4')});
-
-      /* top row */
-      var top=h('div',{style:'display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:.65rem'});
-      var tl=h('div',{style:'flex:1;min-width:0'});
-      var badges=h('div',{style:'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:5px'});
-      badges.appendChild(h('span',{style:'font-size:.7rem;padding:2px 9px;border-radius:50px;font-weight:500;background:'+typeColor+'22;color:'+typeColor},[typeLabel]));
-      badges.appendChild(h('span',{style:'font-size:.7rem;padding:2px 9px;border-radius:50px;background:'+(bk.confirmed?'#d1fae5':'#fef3c7')+';color:'+(bk.confirmed?'#065f46':'#92400e')},[bk.confirmed?'Bekräftad':'Väntar bekräftelse']));
-      tl.appendChild(badges);
-      tl.appendChild(h('div',{style:'font-weight:500;font-size:.95rem;color:'+stone+';margin-bottom:2px'},[bk.name]));
-      tl.appendChild(h('div',{style:'font-size:.8rem;color:'+muted},[bk.time+' · '+bk.persons+' person'+(bk.persons>1?'er':'')]));
-      if(bk.phone) tl.appendChild(h('div',{style:'font-size:.78rem;color:'+muted+';margin-top:2px'},[bk.phone]));
-      top.appendChild(tl);
-      var tr=h('div',{style:'text-align:right;flex-shrink:0'});
-      tr.appendChild(h('div',{style:'font-size:1.05rem;font-weight:500;color:'+navy},[bk.total.toLocaleString('sv-SE')+' kr']));
-      top.appendChild(tr);
-      card.appendChild(top);
-
-      /* crew confirm button */
+      /* crew confirm state */
       if(!bk.crewConfirmed) bk.crewConfirmed={};
       var myConfirmed=bk.crewConfirmed[person.name];
-      var confirmRow=h('div',{style:'padding-top:.6rem;border-top:1px solid #f0f5f8;display:flex;align-items:center;justify-content:space-between;gap:8px'});
-      confirmRow.appendChild(h('span',{style:'font-size:.75rem;color:'+muted+';font-style:italic'},[myConfirmed?'Du har bekräftat att du tar detta pass ✓':'Har du möjlighet att ta detta pass?']));
-      confirmRow.appendChild(h('button',{
-        style:'padding:5px 14px;border-radius:50px;border:none;cursor:pointer;font-family:Outfit,sans-serif;font-size:.75rem;font-weight:500;background:'+(myConfirmed?'#d1fae5':''+navy)+';color:'+(myConfirmed?'#065f46':white),
+
+      var card=h('div',{style:'background:'+white+';border:1px solid #e2edf2;border-radius:14px;margin-bottom:10px;overflow:hidden;border-left:3px solid '+(myConfirmed?'#27ae60':'#d4c9b4')});
+
+      /* ── image strip + date header ── */
+      var cardTop=h('div',{style:'display:flex;align-items:stretch;min-height:80px'});
+
+      /* product image thumbnail */
+      var thumb=h('div',{style:'width:90px;flex-shrink:0;background:#e2edf2;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center'});
+      if(imgSrc){
+        var timg=h('img',{src:imgSrc,style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'});
+        timg.onerror=function(){this.style.display='none';};
+        thumb.appendChild(timg);
+      }
+      /* type badge overlay on thumb */
+      var typeBadge=h('div',{style:'position:absolute;bottom:4px;left:4px;right:4px;background:'+typeColor+';color:white;font-size:.58rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;text-align:center;padding:2px 4px;border-radius:4px'},[typeLabel]);
+      thumb.appendChild(typeBadge);
+      if(!imgSrc){
+        thumb.appendChild(h('div',{style:'font-size:1.75rem;opacity:.3'},['⛵']));
+      }
+      cardTop.appendChild(thumb);
+
+      /* main info */
+      var info=h('div',{style:'flex:1;padding:.85rem 1rem;display:flex;flex-direction:column;justify-content:center;gap:3px'});
+
+      /* date + time row */
+      var dateRow=h('div',{style:'display:flex;align-items:center;gap:8px;margin-bottom:2px'});
+      dateRow.appendChild(h('span',{style:'font-size:.72rem;font-weight:600;letter-spacing:.04em;color:'+water+';text-transform:uppercase'},[bk.date||'']));
+      var timeShort=bk.time==='Förmiddag 09–13'?'FM 09–13':bk.time==='Eftermiddag 14–18'?'EM 14–18':bk.time||'';
+      dateRow.appendChild(h('span',{style:'font-size:.7rem;background:#f0f5f8;color:'+muted+';padding:1px 8px;border-radius:50px'},[timeShort]));
+      info.appendChild(dateRow);
+
+      /* customer name — big */
+      info.appendChild(h('div',{style:'font-family:"Cormorant Garamond",serif;font-size:1.25rem;font-weight:400;color:'+stone+';line-height:1.1'},[bk.name]));
+
+      /* persons + booking status */
+      var detRow=h('div',{style:'display:flex;align-items:center;gap:8px;margin-top:2px'});
+      detRow.appendChild(h('span',{style:'font-size:.78rem;color:'+muted},[bk.persons+' vuxna'+(bk.children?' + '+bk.children+' barn':'')]));
+      detRow.appendChild(h('span',{style:'font-size:.68rem;padding:1px 8px;border-radius:50px;background:'+(bk.confirmed?'#d1fae5':'#fef3c7')+';color:'+(bk.confirmed?'#065f46':'#92400e')},[bk.confirmed?'Bekräftad':'Väntar']));
+      info.appendChild(detRow);
+
+      if(bk.phone) info.appendChild(h('div',{style:'font-size:.75rem;color:'+muted+';margin-top:1px'},[bk.phone]));
+      cardTop.appendChild(info);
+
+      /* confirm button on right side */
+      var confirmSide=h('div',{style:'display:flex;align-items:center;padding:.85rem .75rem;border-left:1px solid #f0f5f8;flex-shrink:0'});
+      confirmSide.appendChild(h('button',{
+        style:'padding:7px 14px;border-radius:50px;border:none;cursor:pointer;font-family:Outfit,sans-serif;font-size:.75rem;font-weight:600;background:'+(myConfirmed?'#d1fae5':navy)+';color:'+(myConfirmed?'#065f46':white)+';white-space:nowrap',
         onclick:function(){bk.crewConfirmed[person.name]=!myConfirmed;save();render();}
-      },[myConfirmed?'Ångra':'Jag tar det ✓']));
-      card.appendChild(confirmRow);
+      },[myConfirmed?'✓ Jag kör':'Jag tar det']));
+      cardTop.appendChild(confirmSide);
+
+      card.appendChild(cardTop);
 
       /* colleagues */
       if(colleagues.length){
-        var cr=h('div',{style:'display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding-top:.6rem;border-top:1px solid #f0f5f8'});
-        cr.appendChild(h('span',{style:'font-size:.72rem;color:'+muted},'Jobbar med:'));
+        var cr=h('div',{style:'display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:.5rem 1rem;border-top:1px solid #f0f5f8;background:#fafafa'});
+        cr.appendChild(h('span',{style:'font-size:.7rem;color:'+muted},'Jobbar med:'));
         colleagues.forEach(function(cname){
           var csk=S.skippers.find(function(s){return s.name===cname;})||{};
           var ch=csk.role==='helmsman';
-          cr.appendChild(h('span',{style:'font-size:.72rem;padding:2px 9px;border-radius:50px;background:'+(ch?'#fef3c7':'#e2edf2')+';color:'+(ch?'#92400e':water)},
-            [(ch?'🧭 ':'⚓ ')+cname+(ch?' (Rorsman)':' (Skeppare)')]));
+          cr.appendChild(h('span',{style:'font-size:.7rem;padding:2px 9px;border-radius:50px;background:'+(ch?'#fef3c7':'#e2edf2')+';color:'+(ch?'#92400e':water)},
+            [(ch?'🧭 ':'⚓ ')+cname]));
         });
         card.appendChild(cr);
       }
