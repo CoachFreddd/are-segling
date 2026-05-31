@@ -34,7 +34,7 @@ function lsSet(k,v){try{LS.setItem(k,JSON.stringify(v));}catch(e){}}
    
    En booking "kräver" ceil(persons/3) båtar per slot.
 ══════════════════════════════════════════════ */
-var BOATS=2, MAX_PER_BOAT=3;
+var BOATS=2, MAX_PER_BOAT=4;
 
 /* Return how many boats are needed for N persons */
 function boatsNeeded(persons){return Math.ceil(persons/MAX_PER_BOAT);}
@@ -133,8 +133,8 @@ var DEFAULT_SKIPPERS=[
   {id:3,name:'Mats Holmgren',age:29,notes:'Privatgruppturer, pratar engelska flytande.',role:'skipper'}
 ];
 var DEFAULT_PRODUCTS=[
-  {id:'halvdag',name:'Segla halvdag',desc:'4 timmar på Åresjön. Välj förmiddag (09–13) eller eftermiddag (14–18).',price:1500,unit:'person',hasTime:true,img:null,imgFile:'halvdag.png'},
-  {id:'heldag',name:'Segla heldag',desc:'Hel dag med lunch ombord. Det ultimata fjälläventyret på Åresjön.',price:2800,unit:'person',hasTime:false,img:null,imgFile:'heldag.png'},
+  {id:'halvdag',name:'Segla halvdag',desc:'4 timmar på Åresjön. Välj förmiddag (09–13) eller eftermiddag (14–18).',price:1500,unit:'person',hasTime:true,img:null,imgFile:'halvdag.png',longDesc:'Vad får du med dig efter en halvdag hos oss? Du kommer få hänga i hängbanden, testa att styra, skota och lite grundläggande seglingskunskap. Om förhållandena är bra kommer du få testa segla genaker — CB66:ans största segel.'},
+  {id:'heldag',name:'Segla heldag',desc:'Hel dag med lunch ombord. Det ultimata fjälläventyret på Åresjön.',price:2800,unit:'person',hasTime:false,img:null,imgFile:'heldag.png',longDesc:'En hel dag till sjöss med Åres fjäll som fond. Vi seglar ut tidigt, äter lunch ombord och njuter av det fridfulla vattnet hela dagen. Perfekt för er som vill ha en riktig upplevelse och tid att verkligen landa i seglandet.'},
   {id:'kurs',name:'Lär dig segla',desc:'Nybörjarkurs med erfarna skeppare. Kontakta oss för kurstillfällen.',price:3500,unit:'person',hasTime:false,img:null,imgFile:'kurs.png',fixedDates:[
     {iso:'2025-06-28',label:'28–29 juni (Nybörjare)'},{iso:'2025-07-12',label:'12–13 juli (Nybörjare)'},{iso:'2025-07-19',label:'19 juli (Uppfräschning)'},{iso:'2025-08-02',label:'2–3 aug (Nybörjare)'}
   ]},
@@ -152,6 +152,8 @@ function mergeProducts(stored, defaults){
     found.imgFile = def.imgFile;
     /* keep fixedDates from defaults */
     if(def.fixedDates) found.fixedDates = def.fixedDates;
+    /* carry longDesc from stored if exists, else use default */
+    if(!found.longDesc && def.longDesc) found.longDesc = def.longDesc;
     return found;
   }).concat(stored.filter(function(s){
     return !defaults.find(function(d){return d.id===s.id;});
@@ -336,7 +338,25 @@ function renderSite(){
     card.appendChild(imgBox);
     var body=h('div',{style:'padding:1.4rem'});
     body.appendChild(h('h3',{style:'font-family:"Cormorant Garamond",serif;font-size:1.7rem;font-weight:600;color:'+stone+';margin-bottom:.4rem;letter-spacing:-.01em'},[p.name]));
-    body.appendChild(h('p',{style:'color:'+muted+';font-size:.85rem;line-height:1.65;font-weight:300;margin-bottom:1.25rem;min-height:48px'},[p.desc]));
+    body.appendChild(h('p',{style:'color:'+muted+';font-size:.85rem;line-height:1.65;font-weight:300;margin-bottom:'+(p.longDesc?'.6rem':'1.25rem')+';min-height:48px'},[p.desc]));
+    /* expandable long description */
+    if(p.longDesc){
+      var expandId='exp-'+p.id;
+      var expBox=h('div',{id:expandId,style:'overflow:hidden;max-height:0;transition:max-height .35s ease;margin-bottom:0'});
+      expBox.appendChild(h('p',{style:'color:'+stone+';font-size:.875rem;line-height:1.75;font-weight:300;padding:.75rem 0 1rem;border-top:1px solid #f0f5f8'},[p.longDesc]));
+      body.appendChild(expBox);
+      var readBtn=h('button',{style:'border:none;background:none;color:'+water+';font-size:.78rem;cursor:pointer;padding:0;margin-bottom:1rem;font-family:Outfit,sans-serif;display:flex;align-items:center;gap:4px',
+        onclick:function(e){
+          e.stopPropagation();
+          var box=document.getElementById(expandId);
+          var open=box.style.maxHeight!=='0px'&&box.style.maxHeight!=='';
+          box.style.maxHeight=open?'0':'300px';
+          box.style.marginBottom=open?'0':'.25rem';
+          this.innerHTML=open?'Läs mer ▾':'Stäng ▴';
+        }
+      },['Läs mer ▾']);
+      body.appendChild(readBtn);
+    }
     var foot=h('div',{style:'display:flex;align-items:center;justify-content:space-between;border-top:1px solid #e2edf2;padding-top:1rem'});
     foot.appendChild(h('div',{style:'font-size:1rem;color:'+stone},[p.price.toLocaleString('sv-SE')+' kr ',h('span',{style:'font-size:.78rem;color:'+muted+';font-weight:300'},['/ '+p.unit])]));
     foot.appendChild(h('button',{style:CS.btnPrimary},['Boka →']));
@@ -384,7 +404,7 @@ function renderModal(p){
   qr.appendChild(mkQ(-1));
   qr.appendChild(h('span',{style:'font-family:"Cormorant Garamond",serif;font-size:1.4rem;min-width:28px;text-align:center'},[String(S.booking.persons)]));
   qr.appendChild(mkQ(1));
-  qr.appendChild(h('span',{style:'color:'+muted+';font-size:.78rem'},['max '+BOATS*MAX_PER_BOAT+' (2 båtar × 3)']));
+  qr.appendChild(h('span',{style:'color:'+muted+';font-size:.78rem'},['max '+BOATS*MAX_PER_BOAT+' (2 båtar × 4)']));
   mb.appendChild(qr);
 
   /* ── Step 2: time first for halvdag (affects date availability) ── */
@@ -829,8 +849,11 @@ function renderAdminProducts(){
     pts.value=p.duration||(p.hasTime?'halvdag':'heldag');
     pts.onchange=function(){p.duration=this.value;p.hasTime=this.value==='halvdag';};
     ptl.appendChild(pts);card.appendChild(ptl);
-    card.appendChild(h('label',{style:CS.label},['Beskrivning']));
+    card.appendChild(h('label',{style:CS.label},['Kort beskrivning']));
     var pdt=h('textarea',{style:CS.input+';height:56px;resize:vertical;margin-bottom:8px'});pdt.value=p.desc;pdt.oninput=function(){p.desc=this.value;};card.appendChild(pdt);
+    card.appendChild(h('label',{style:CS.label},['Längre beskrivning (Läs mer-text)']));
+    var pld=h('textarea',{style:CS.input+';height:90px;resize:vertical;margin-bottom:8px',placeholder:'Berätta mer om upplevelsen — vad ingår, vad kan gästen förvänta sig?'});
+    pld.value=p.longDesc||'';pld.oninput=function(){p.longDesc=this.value;};card.appendChild(pld);
     var btns=h('div',{style:'display:flex;gap:6px'});
     btns.appendChild(h('button',{style:CS.btnPrimary+';flex:1',onclick:function(){save();toast('Produkt sparad');}},['Spara']));
     btns.appendChild(h('button',{style:CS.btnDanger,onclick:function(){S.confirmDelete={type:'product',id:p.id};render();}},['Ta bort']));
