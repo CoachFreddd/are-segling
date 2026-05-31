@@ -133,20 +133,34 @@ var DEFAULT_SKIPPERS=[
   {id:3,name:'Mats Holmgren',age:29,notes:'Privatgruppturer, pratar engelska flytande.',role:'skipper'}
 ];
 var DEFAULT_PRODUCTS=[
-  {id:'halvdag',name:'Segla halvdag',desc:'4 timmar på Åresjön. Välj förmiddag (09–13) eller eftermiddag (14–18).',price:1500,unit:'person',hasTime:true,img:null},
-  {id:'heldag',name:'Segla heldag',desc:'Hel dag med lunch ombord. Det ultimata fjälläventyret på Åresjön.',price:2800,unit:'person',hasTime:false,img:null},
-  {id:'kurs',name:'Lär dig segla',desc:'Nybörjarkurs med erfarna skeppare. Kontakta oss för kurstillfällen.',price:3500,unit:'person',hasTime:false,img:null,fixedDates:[
+  {id:'halvdag',name:'Segla halvdag',desc:'4 timmar på Åresjön. Välj förmiddag (09–13) eller eftermiddag (14–18).',price:1500,unit:'person',hasTime:true,img:null,imgFile:'halvdag.png'},
+  {id:'heldag',name:'Segla heldag',desc:'Hel dag med lunch ombord. Det ultimata fjälläventyret på Åresjön.',price:2800,unit:'person',hasTime:false,img:null,imgFile:'heldag.png'},
+  {id:'kurs',name:'Lär dig segla',desc:'Nybörjarkurs med erfarna skeppare. Kontakta oss för kurstillfällen.',price:3500,unit:'person',hasTime:false,img:null,imgFile:'kurs.png',fixedDates:[
     {iso:'2025-06-28',label:'28–29 juni (Nybörjare)'},{iso:'2025-07-12',label:'12–13 juli (Nybörjare)'},{iso:'2025-07-19',label:'19 juli (Uppfräschning)'},{iso:'2025-08-02',label:'2–3 aug (Nybörjare)'}
   ]},
-  {id:'privat',name:'Privat segling',desc:'Boka hela båten för er grupp. Skräddarsy ert program helt fritt.',price:5500,unit:'tillfälle',hasTime:true,img:null}
+  {id:'privat',name:'Privat segling',desc:'Boka hela båten för er grupp. Skräddarsy ert program helt fritt.',price:5500,unit:'tillfälle',hasTime:true,img:null,imgFile:'privat.png'}
 ];
+
+/* Merge stored products with defaults to pick up new imgFile fields */
+function mergeProducts(stored, defaults){
+  if(!stored||!stored.length) return defaults;
+  return defaults.map(function(def){
+    var found=stored.find(function(s){return s.id===def.id;});
+    if(!found) return def;
+    /* keep stored data but fill in imgFile from defaults if missing */
+    if(!found.imgFile && def.imgFile) found.imgFile=def.imgFile;
+    return found;
+  }).concat(stored.filter(function(s){
+    return !defaults.find(function(d){return d.id===s.id;});
+  }));
+}
 
 var S={
   view:'site', adminTab:'orders',
   loginUser:'', loginPass:'', loginErr:false,
   bookings:lsGet('are_bookings',[]),
   skippers:lsGet('are_skippers',DEFAULT_SKIPPERS),
-  products:lsGet('are_products',DEFAULT_PRODUCTS),
+  products:mergeProducts(lsGet('are_products',null), DEFAULT_PRODUCTS),
   modal:null,
   booking:{dateISO:null,dateLabel:'',time:null,persons:2,name:'',phone:'',_err:null,_success:false},
   calYear:new Date().getFullYear(), calMonth:new Date().getMonth(),
