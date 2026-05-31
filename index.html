@@ -181,6 +181,7 @@ var S={
   addProduct:false,
   newProduct:{name:'',desc:'',price:1000,unit:'person',hasTime:false,duration:'heldag'},
   confirmDelete:null,
+  editBooking:null,
   toast:null,
   selectedPerson:null
 };
@@ -231,6 +232,7 @@ function render(){
   if(S.toast) app.appendChild(h('div',{style:'position:fixed;bottom:24px;right:24px;background:'+navy+';color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;z-index:9999'},[S.toast]));
   if(S.confirmDelete) app.appendChild(renderConfirmDialog());
   if(S.editSkipper) app.appendChild(renderEditSkipperDialog());
+  if(S.editBooking) app.appendChild(renderEditBookingDialog());
 }
 function toast(msg){S.toast=msg;render();setTimeout(function(){S.toast=null;render();},2500);}
 
@@ -281,6 +283,111 @@ function renderEditSkipperDialog(){
     save();S.editSkipper=null;toast('Uppdaterad');render();
   }},['Spara']));
   box.appendChild(row);overlay.appendChild(box);return overlay;
+}
+
+/* ══════════════ EDIT BOOKING DIALOG ══════════════ */
+function renderEditBookingDialog(){
+  var eb=S.editBooking;
+  var bk=S.bookings.find(function(b){return b.id===eb.id;});
+  if(!bk) return h('div',{});
+  var overlay=h('div',{style:'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem'});
+  var box=h('div',{style:'background:'+birch+';border-radius:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)'});
+
+  /* header */
+  var top=h('div',{style:'background:'+navy+';padding:1.5rem;border-radius:20px 20px 0 0;position:relative'});
+  top.appendChild(h('div',{style:'font-family:"Cormorant Garamond",serif;font-size:1.4rem;font-weight:300;color:#e2edf2'},['Ändra bokning']));
+  top.appendChild(h('div',{style:'font-size:.8rem;color:rgba(255,255,255,.45);margin-top:3px'},[bk.name]));
+  top.appendChild(h('button',{style:'position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:.9rem',onclick:function(){S.editBooking=null;render();}},['✕']));
+  box.appendChild(top);
+
+  var body=h('div',{style:'padding:1.5rem'});
+
+  /* ── product type ── */
+  body.appendChild(h('label',{style:CS.label},['Produkttyp']));
+  var typeRow=h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:1.2rem'});
+  S.products.forEach(function(p){
+    var sel=eb.type===p.id;
+    var opt=h('div',{style:'padding:10px 13px;border-radius:10px;border:1.5px solid '+(sel?navy:'#d4c9b4')+';background:'+(sel?navy:white)+';cursor:pointer;display:flex;align-items:center;justify-content:space-between',
+      onclick:function(){eb.type=p.id;eb.title=p.name;eb.time=p.hasTime?eb.time:'Heldag';render();}
+    });
+    opt.appendChild(h('span',{style:'font-size:.875rem;font-weight:'+(sel?'500':'400')+';color:'+(sel?white:stone)},[p.name]));
+    opt.appendChild(h('span',{style:'font-size:.8rem;color:'+(sel?'rgba(255,255,255,.6)':muted)},[p.price.toLocaleString('sv-SE')+' kr / '+p.unit]));
+    if(sel) opt.appendChild(h('span',{style:'color:white;margin-left:6px'},['✓']));
+    typeRow.appendChild(opt);
+  });
+  body.appendChild(typeRow);
+
+  /* ── time (only if product hasTime) ── */
+  var selProd=S.products.find(function(p){return p.id===eb.type;});
+  if(selProd&&selProd.hasTime){
+    body.appendChild(h('label',{style:CS.label},['Tid']));
+    var timeRow=h('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.2rem'});
+    [{k:'Förmiddag 09–13',l:'Förmiddag',s:'09:00–13:00'},{k:'Eftermiddag 14–18',l:'Eftermiddag',s:'14:00–18:00'}].forEach(function(t){
+      var sel=eb.time===t.k;
+      timeRow.appendChild(h('div',{style:'padding:10px;border-radius:10px;border:1.5px solid '+(sel?navy:'#d4c9b4')+';background:'+(sel?navy:white)+';cursor:pointer;text-align:center',
+        onclick:function(){eb.time=t.k;render();}
+      },[h('div',{style:'font-size:.875rem;font-weight:500;color:'+(sel?white:stone)},[t.l]),
+         h('div',{style:'font-size:.75rem;color:'+(sel?'rgba(255,255,255,.6)':muted)},[t.s])]));
+    });
+    body.appendChild(timeRow);
+  }
+
+  /* ── date ── */
+  body.appendChild(h('label',{style:CS.label},['Datum']));
+  var allDates=datesInRange(isoDate(new Date()),isoDate(SEASON_END));
+  var dg=h('div',{style:'display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;margin-bottom:1.2rem;padding-right:4px'});
+  /* also show past 30 days for historical edits */
+  var pastStart=new Date(); pastStart.setDate(pastStart.getDate()-30);
+  var allDatesExt=datesInRange(isoDate(pastStart),isoDate(SEASON_END));
+  allDatesExt.forEach(function(d){
+    var iso=isoDate(d);
+    var label=fmtDate(d);
+    var sel=eb.dateISO===iso;
+    var opt=h('div',{style:'padding:8px 12px;border-radius:9px;border:1.5px solid '+(sel?navy:'#d4c9b4')+';background:'+(sel?navy:white)+';cursor:pointer;display:flex;align-items:center;justify-content:space-between',
+      onclick:function(){eb.dateISO=iso;eb.dateLabel=label;render();}
+    });
+    opt.appendChild(h('span',{style:'font-size:.85rem;color:'+(sel?white:stone)},[label]));
+    if(sel) opt.appendChild(h('span',{style:'color:white'},['✓']));
+    dg.appendChild(opt);
+  });
+  body.appendChild(dg);
+
+  /* ── persons ── */
+  body.appendChild(h('label',{style:CS.label},['Antal vuxna']));
+  var qr=h('div',{style:'display:flex;align-items:center;gap:10px;margin-bottom:.75rem'});
+  qr.appendChild(h('button',{style:'width:30px;height:30px;border-radius:50%;border:1.5px solid #d4c9b4;background:'+white+';cursor:pointer',onclick:function(){eb.persons=Math.max(1,eb.persons-1);render();}},['−']));
+  qr.appendChild(h('span',{style:'font-size:1.1rem;font-weight:500;min-width:24px;text-align:center'},[String(eb.persons)]));
+  qr.appendChild(h('button',{style:'width:30px;height:30px;border-radius:50%;border:1.5px solid #d4c9b4;background:'+white+';cursor:pointer',onclick:function(){eb.persons=Math.min(BOATS*MAX_PER_BOAT,eb.persons+1);render();}},['+']));
+  body.appendChild(qr);
+
+  body.appendChild(h('label',{style:CS.label},['Antal barn (under 15 år, 500 kr)']));
+  var cr=h('div',{style:'display:flex;align-items:center;gap:10px;margin-bottom:1.2rem'});
+  cr.appendChild(h('button',{style:'width:30px;height:30px;border-radius:50%;border:1.5px solid #d4c9b4;background:'+white+';cursor:pointer',onclick:function(){eb.children=Math.max(0,(eb.children||0)-1);render();}},['−']));
+  cr.appendChild(h('span',{style:'font-size:1.1rem;font-weight:500;min-width:24px;text-align:center'},[String(eb.children||0)]));
+  cr.appendChild(h('button',{style:'width:30px;height:30px;border-radius:50%;border:1.5px solid #d4c9b4;background:'+white+';cursor:pointer',onclick:function(){eb.children=Math.min(8,(eb.children||0)+1);render();}},['+']));
+  body.appendChild(cr);
+
+  /* save */
+  var btnRow=h('div',{style:'display:flex;gap:8px'});
+  btnRow.appendChild(h('button',{style:CS.btnGhost+';flex:1',onclick:function(){S.editBooking=null;render();}},['Avbryt']));
+  btnRow.appendChild(h('button',{style:CS.btnPrimary+';flex:2',onclick:function(){
+    if(!eb.dateISO){alert('Välj datum');return;}
+    var sp=S.products.find(function(p){return p.id===eb.type;});
+    var newTotal=sp?(sp.price*(sp.unit==='tillfälle'?1:eb.persons)+500*(eb.children||0)):bk.total;
+    bk.dateISO=eb.dateISO;
+    bk.date=eb.dateLabel;
+    bk.type=eb.type;
+    bk.title=eb.title;
+    bk.time=sp&&sp.hasTime?eb.time:'Heldag';
+    bk.persons=eb.persons;
+    bk.children=eb.children||0;
+    bk.total=newTotal;
+    save(); S.editBooking=null; toast('Bokning uppdaterad'); render();
+  }},['Spara ändringar']));
+  body.appendChild(btnRow);
+  box.appendChild(body);
+  overlay.appendChild(box);
+  return overlay;
 }
 
 /* ══════════════ SITE ══════════════ */
@@ -681,8 +788,8 @@ function renderOrders(){
       det.appendChild(h('div',{style:'font-size:.72rem;font-weight:500;color:'+muted+';text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px'},['Tilldelade skeppare']));
       var chips=h('div',{style:'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px'});
       (bk.skippers||[]).forEach(function(sname){
-        var _so=S.skippers.find(function(s){return s.name===sname;})||{}; chips.appendChild(h('span',{style:'display:inline-flex;align-items:center;gap:6px;background:'+(_so.role==='helmsman'?'#fef3c7':'#e2edf2')+';color:'+(_so.role==='helmsman'?'#92400e':water)+';border-radius:50px;padding:4px 12px;font-size:.78rem'},[
-          (function(){var so=S.skippers.find(function(s){return s.name===sname;})||{};return (so.role==='helmsman'?'🧭':'⚓')+' '+sname+(so.role==='helmsman'?' (Rorsman)':' (Skeppare)');})(),
+        var _so=S.skippers.find(function(s){return s.name===sname;})||{}; var _conf=bk.crewConfirmed&&bk.crewConfirmed[sname]; chips.appendChild(h('span',{style:'display:inline-flex;align-items:center;gap:6px;background:'+(_so.role==='helmsman'?'#fef3c7':'#e2edf2')+';color:'+(_so.role==='helmsman'?'#92400e':water)+';border-radius:50px;padding:4px 12px;font-size:.78rem;border:1.5px solid '+(_conf?'#27ae60':'transparent')},[
+          (function(){var so=S.skippers.find(function(s){return s.name===sname;})||{};var conf=bk.crewConfirmed&&bk.crewConfirmed[sname];return (so.role==='helmsman'?'🧭':'⚓')+' '+sname+(conf?' ✓':'');})(),
           h('button',{style:'background:none;border:none;cursor:pointer;color:'+muted+';font-size:.85rem;padding:0;line-height:1',onclick:function(){bk.skippers=bk.skippers.filter(function(n){return n!==sname;});save();render();}},['✕'])
         ]));
       });
@@ -698,8 +805,17 @@ function renderOrders(){
         skRow.appendChild(h('button',{style:CS.btnPrimary,onclick:function(){if(ssel.value){if(!bk.skippers)bk.skippers=[];bk.skippers.push(ssel.value);save();render();}}},['Tilldela']));
         det.appendChild(skRow);
       }
-      /* delete booking */
-      det.appendChild(h('button',{style:CS.btnDanger+';width:100%;margin-top:4px',onclick:function(){S.confirmDelete={type:'booking',id:bk.id};render();}},['🗑 Ta bort bokning']));
+      /* edit + delete buttons */
+      var actRow=h('div',{style:'display:flex;gap:8px;margin-top:8px'});
+      actRow.appendChild(h('button',{style:CS.btnGhost+';flex:1',onclick:function(){
+        S.editBooking={
+          id:bk.id, dateISO:bk.dateISO||'', dateLabel:bk.date||'',
+          time:bk.time, type:bk.type, title:bk.title, persons:bk.persons, children:bk.children||0
+        };
+        render();
+      }},['✏️ Ändra bokning']));
+      actRow.appendChild(h('button',{style:CS.btnDanger+';flex:1',onclick:function(){S.confirmDelete={type:'booking',id:bk.id};render();}},['🗑 Ta bort']));
+      det.appendChild(actRow);
       card.appendChild(det);
     }
     wrap.appendChild(card);
@@ -1064,6 +1180,17 @@ function renderSchema(){
       tr.appendChild(h('div',{style:'font-size:1.05rem;font-weight:500;color:'+navy},[bk.total.toLocaleString('sv-SE')+' kr']));
       top.appendChild(tr);
       card.appendChild(top);
+
+      /* crew confirm button */
+      if(!bk.crewConfirmed) bk.crewConfirmed={};
+      var myConfirmed=bk.crewConfirmed[person.name];
+      var confirmRow=h('div',{style:'padding-top:.6rem;border-top:1px solid #f0f5f8;display:flex;align-items:center;justify-content:space-between;gap:8px'});
+      confirmRow.appendChild(h('span',{style:'font-size:.75rem;color:'+muted+';font-style:italic'},[myConfirmed?'Du har bekräftat att du tar detta pass ✓':'Har du möjlighet att ta detta pass?']));
+      confirmRow.appendChild(h('button',{
+        style:'padding:5px 14px;border-radius:50px;border:none;cursor:pointer;font-family:Outfit,sans-serif;font-size:.75rem;font-weight:500;background:'+(myConfirmed?'#d1fae5':''+navy)+';color:'+(myConfirmed?'#065f46':white),
+        onclick:function(){bk.crewConfirmed[person.name]=!myConfirmed;save();render();}
+      },[myConfirmed?'Ångra':'Jag tar det ✓']));
+      card.appendChild(confirmRow);
 
       /* colleagues */
       if(colleagues.length){
