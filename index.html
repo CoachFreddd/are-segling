@@ -726,9 +726,19 @@ function renderAdmin(){
   var nav=h('div',{style:'background:'+navy+';padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:50'});
   nav.appendChild(h('div',{style:'font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:'+glacier+';white-space:nowrap'},['Admin']));
   var tabs=h('div',{style:'display:flex;gap:2px;background:rgba(255,255,255,.07);border-radius:8px;padding:3px'});
-  [['orders','Bokningar'],['calendar','Kalender'],['statistik','Statistik'],['products','Produkter'],['skippers','Skeppare']].forEach(function(pair){
+  /* count total pending crew assignments (assigned but not yet confirmed) */
+  var pendingCrewTotal=S.bookings.reduce(function(sum,b){
+    return sum+(b.skippers||[]).filter(function(n){return !(b.crewConfirmed&&b.crewConfirmed[n]);}).length;
+  },0);
+
+  [['orders','Bokningar'],['calendar','Kalender'],['statistik','Arbetsschema'],['products','Produkter'],['skippers','Skeppare']].forEach(function(pair){
     var t=pair[0],lbl=pair[1],active=S.adminTab===t;
-    tabs.appendChild(h('button',{style:'padding:6px 12px;border-radius:6px;border:none;background:'+(active?white:'transparent')+';color:'+(active?navy:'rgba(255,255,255,.55)')+';cursor:pointer;font-family:Outfit,sans-serif;font-size:.8rem;font-weight:'+(active?'500':'400')+';white-space:nowrap',onclick:function(){S.adminTab=t;render();}},[lbl]));
+    var btn=h('button',{style:'padding:6px 12px;border-radius:6px;border:none;background:'+(active?white:'transparent')+';color:'+(active?navy:'rgba(255,255,255,.55)')+';cursor:pointer;font-family:Outfit,sans-serif;font-size:.8rem;font-weight:'+(active?'500':'400')+';white-space:nowrap;display:flex;align-items:center;gap:5px;position:relative',onclick:function(){S.adminTab=t;render();}},[lbl]);
+    /* badge on Arbetsschema tab */
+    if(t==='statistik'&&pendingCrewTotal>0){
+      btn.appendChild(h('span',{style:'display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;border-radius:50px;background:#c0392b;color:white;font-size:.62rem;font-weight:700;padding:0 4px;line-height:1'},[String(pendingCrewTotal)]));
+    }
+    tabs.appendChild(btn);
   });
   nav.appendChild(tabs);
   nav.appendChild(h('button',{style:'border:none;background:none;color:rgba(255,255,255,.45);cursor:pointer;font-family:Outfit,sans-serif;font-size:.78rem;white-space:nowrap',onclick:function(){S.view='site';render();}},['← Tillbaka']));
@@ -790,31 +800,7 @@ function renderOrders(){
   revRow.appendChild(revRight);
   wrap.appendChild(revRow);
 
-    /* ── Revenue by product ── */
-  if(S.bookings.length){
-    var byProd={};
-    S.bookings.forEach(function(b){
-      if(!byProd[b.title]) byProd[b.title]={count:0,rev:0,persons:0};
-      byProd[b.title].count++;byProd[b.title].rev+=b.total;byProd[b.title].persons+=b.persons;
-    });
-    var revRow=h('div',{style:'background:'+white+';border:1px solid #e2edf2;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.25rem'});
-    revRow.appendChild(h('div',{style:'font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:'+muted+';margin-bottom:10px'},['Intäkt per produkt']));
-    var maxRev=Math.max.apply(null,Object.values(byProd).map(function(v){return v.rev;}));
-    Object.keys(byProd).forEach(function(title){
-      var d=byProd[title];
-      var pct=maxRev>0?Math.round(d.rev/maxRev*100):0;
-      var row=h('div',{style:'margin-bottom:10px'});
-      var top=h('div',{style:'display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px'});
-      top.appendChild(h('span',{style:'font-size:.85rem;color:'+stone},[title+' ('+d.count+' bkn · '+d.persons+' pers)']));
-      top.appendChild(h('span',{style:'font-size:.9rem;font-weight:500;color:'+navy},[d.rev.toLocaleString('sv-SE')+' kr']));
-      row.appendChild(top);
-      var bar=h('div',{style:'height:6px;border-radius:3px;background:#e2edf2;overflow:hidden'});
-      bar.appendChild(h('div',{style:'height:100%;width:'+pct+'%;background:'+water+';border-radius:3px;transition:width .3s'}));
-      row.appendChild(bar);
-      revRow.appendChild(row);
-    });
-    wrap.appendChild(revRow);
-  }
+
   if(!S.bookings.length){wrap.appendChild(h('div',{style:'text-align:center;padding:3rem;color:'+muted+';background:'+white+';border-radius:14px;border:1px solid #e2edf2'},['Inga bokningar ännu']));return wrap;}
   var sorted=S.bookings.slice().sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
   sorted.forEach(function(bk){
@@ -1362,10 +1348,14 @@ function renderStatistik(){
     var hdr=h('div',{style:'background:'+(isHelm?'#fef3c7':'#1e3040')+';padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem'});
     hdr.appendChild(h('div',{style:'width:44px;height:44px;border-radius:50%;background:'+(isHelm?'#fde68a':'rgba(255,255,255,.12)')+';display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:600;color:'+(isHelm?'#92400e':'#c8d8e0')+';flex-shrink:0'},[ini]));
     var hinfo=h('div',{style:'flex:1'});
+    var unconfSk=S.bookings.reduce(function(sum,b){
+      return sum+(((b.skippers||[]).includes(sk.name)&&!(b.crewConfirmed&&b.crewConfirmed[sk.name]))?1:0);
+    },0);
     var hnrow=h('div',{style:'display:flex;align-items:center;gap:10px'});
     hnrow.appendChild(h('span',{style:'font-family:"Cormorant Garamond",serif;font-size:1.2rem;font-weight:400;color:'+(isHelm?'#92400e':'#c8d8e0')},[sk.name]));
     hnrow.appendChild(h('span',{style:'font-size:.68rem;padding:2px 8px;border-radius:50px;font-weight:500;background:'+(isHelm?'#fcd34d':'rgba(200,216,224,.2)')+';color:'+(isHelm?'#78350f':'#c8d8e0')},[isHelm?'Rorsman':'Skeppare']));
     if(sk.age) hnrow.appendChild(h('span',{style:'font-size:.75rem;color:'+(isHelm?'#b45309':'rgba(255,255,255,.45)')},[sk.age+' år']));
+    if(unconfSk>0) hnrow.appendChild(h('span',{style:'display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:50px;background:#c0392b;color:white;font-size:.65rem;font-weight:700;padding:0 4px'},[String(unconfSk)]));
     hinfo.appendChild(hnrow);
     if(sk.notes) hinfo.appendChild(h('div',{style:'font-size:.75rem;color:'+(isHelm?'#b45309':'rgba(255,255,255,.4)')+';margin-top:3px;font-style:italic'},[sk.notes]));
     hdr.appendChild(hinfo);
